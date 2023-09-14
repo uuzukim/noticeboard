@@ -1,0 +1,50 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="kr.or.ddit.member.dao.MemberDAO">
+	<select id="selectMemberForAuth" parameterType="string" resultType="MemberVO">
+		SELECT MEM_ID, MEM_PASS, MEM_NAME
+			, MEM_HP, MEM_MAIL
+			, MEM_BIR
+			, MEM_ROLE
+			, MEM_IMG
+			, MEM_DELETE
+		FROM MEMBER
+		WHERE MEM_ID = #{memId}
+	</select>
+
+</mapper>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
