@@ -1,0 +1,196 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="kr.or.ddit.member.dao.MemberDAO">
+	<select id="selectMemberForAuth" parameterType="string" resultType="MemberVO">
+		SELECT MEM_ID, MEM_PASS, MEM_NAME
+			, MEM_HP, MEM_MAIL
+			, MEM_BIR
+			, MEM_ROLE
+			, MEM_IMG
+		FROM MEMBER
+		WHERE MEM_ID = #{memId} AND MEM_DELETE IS NULL
+	</select>
+
+	<sql id="searchFrag">
+		<trim prefix=" WHERE ">
+        	<if test="simpleCondition neq null and simpleCondition.searchWord neq null and not simpleCondition.searchWord.isEmpty()">
+        		<choose>
+        			<when test="simpleCondition.searchType eq 'name'">
+        				INSTR(MEM_NAME, #{simpleCondition.searchWord}) > 0 
+        			</when>
+        			<when test="simpleCondition.searchType eq 'address'">
+        				INSTR(MEM_ADD1, #{simpleCondition.searchWord}) > 0 
+        			</when>
+        			<otherwise>
+	        			INSTR(MEM_NAME, #{simpleCondition.searchWord}) > 0
+	        			OR 
+	        			INSTR(MEM_ADD1, #{simpleCondition.searchWord}) > 0 
+        			</otherwise>
+        		</choose>
+        	</if>
+        </trim>
+	</sql>
+	<select id="selectTotalRecord" parameterType="PaginationInfo">
+		SELECT COUNT(*)
+		FROM MEMBER	
+		<include refid="searchFrag" />
+	</select>
+
+	<select id="selectMemberList" resultType="MemberVO" parameterType="PaginationInfo">
+		WITH ORDEREDMEMBER AS (
+		    SELECT ROWNUM RNUM, A.*
+		    FROM (
+		        SELECT MEM_ID, MEM_NAME, MEM_HP
+		            , MEM_MAIL, MEM_ADD1, MEM_MILEAGE
+		            , MEM_BIR
+		        FROM MEMBER
+		        <include refid="searchFrag" />
+		       	ORDER BY ROWID DESC
+		    ) A
+		)
+		SELECT *
+		FROM ORDEREDMEMBER
+		WHERE RNUM BETWEEN #{startRow} AND #{endRow}
+	</select>
+	
+	<resultMap type="MemberVO" id="memberMap" autoMapping="true">
+		<id property="memId" column="MEM_ID"/>
+		<collection property="prodList" ofType="ProdVO" autoMapping="true" />
+	</resultMap>
+	
+	<select id="selectMember" parameterType="string" resultMap="memberMap">
+		WITH CARTVIEW AS (
+			SELECT CART_MEMBER, CART_PROD, PROD_ID, PROD_NAME
+				, PROD_PRICE
+				, LPROD_NM "lprod.lprodNm"
+			FROM CART INNER JOIN PROD ON (CART_PROD = PROD_ID)
+					INNER JOIN LPROD ON (PROD_LGU = LPROD_GU)
+		)
+		SELECT
+		    MEM_ID,    MEM_PASS,    MEM_NAME,
+		    MEM_REGNO1,    MEM_REGNO2,    MEM_BIR,
+		    MEM_ZIP,    MEM_ADD1,    MEM_ADD2,
+		    MEM_HOMETEL,    MEM_COMTEL,    MEM_HP,
+		    MEM_MAIL,    MEM_JOB,    MEM_LIKE,
+		    MEM_MEMORIAL,    MEM_MEMORIALDAY,    MEM_MILEAGE,
+		    MEM_DELETE
+		    , MEM_ROLE
+		    , MEM_IMG
+		    , CARTVIEW.*
+		FROM    MEMBER LEFT OUTER JOIN  CARTVIEW ON (MEM_ID = CART_MEMBER)
+		WHERE MEM_ID = #{memId}
+	</select>
+	
+	<insert id="insertMember" parameterType="MemberVO">
+		INSERT INTO MEMBER(
+			MEM_ID
+			, MEM_PASS
+			, MEM_NAME
+			, MEM_REGNO1
+			, MEM_REGNO2
+			, MEM_BIR
+			, MEM_ZIP
+			, MEM_ADD1
+			, MEM_ADD2
+			, MEM_HOMETEL
+			, MEM_COMTEL
+			, MEM_HP
+			, MEM_MAIL
+			, MEM_JOB
+			, MEM_LIKE
+			, MEM_MEMORIAL
+			, MEM_MEMORIALDAY
+			, MEM_MILEAGE
+			<if test="memImg neq null and memImg.length gt 0">
+				, MEM_IMG
+			</if>
+			
+		)VALUES(
+			#{memId,jdbcType=VARCHAR}
+			, #{memPass,jdbcType=VARCHAR}
+			, #{memName,jdbcType=VARCHAR}
+			, #{memRegno1,jdbcType=CHAR}
+			, #{memRegno2,jdbcType=CHAR}
+			, #{memBir,jdbcType=DATE}
+			, #{memZip,jdbcType=CHAR}
+			, #{memAdd1,jdbcType=VARCHAR}
+			, #{memAdd2,jdbcType=VARCHAR}
+			, #{memHometel,jdbcType=VARCHAR}
+			, #{memComtel,jdbcType=VARCHAR}
+			, #{memHp,jdbcType=VARCHAR}
+			, #{memMail,jdbcType=VARCHAR}
+			, #{memJob,jdbcType=VARCHAR}
+			, #{memLike,jdbcType=VARCHAR}
+			, #{memMemorial,jdbcType=VARCHAR}
+			, #{memMemorialday,jdbcType=DATE}
+			, 3000
+			<if test="memImg neq null and memImg.length gt 0">
+				, #{memImg,jdbcType=BLOB}
+			</if>
+		)
+	</insert>
+	
+	<update id="updateMember" parameterType="MemberVO">
+		UPDATE MEMBER
+		SET
+			MEM_ZIP = #{memZip,jdbcType=CHAR}
+			, MEM_ADD1 = #{memAdd1,jdbcType=VARCHAR}
+			, MEM_ADD2 = #{memAdd2,jdbcType=VARCHAR}
+			, MEM_HOMETEL = #{memHometel,jdbcType=VARCHAR}
+			, MEM_COMTEL = #{memComtel,jdbcType=VARCHAR}
+			, MEM_HP = #{memHp,jdbcType=VARCHAR}
+			, MEM_MAIL = #{memMail,jdbcType=VARCHAR}
+			, MEM_JOB = #{memJob,jdbcType=VARCHAR}
+			, MEM_LIKE = #{memLike,jdbcType=VARCHAR}
+			, MEM_MEMORIAL = #{memMemorial,jdbcType=VARCHAR}
+			, MEM_MEMORIALDAY = #{memMemorialday,jdbcType=DATE}
+			
+			<if test="memImg neq null and memImg.length gt 0">
+				, MEM_IMG = #{memImg,jdbcType=BLOB}
+			</if>
+			
+		WHERE MEM_ID = #{memId}
+	</update>
+	
+	<delete id="deleteMember" parameterType="string">
+		UPDATE MEMBER
+		SET
+		MEM_DELETE = '1'
+		WHERE MEM_ID = #{memId}
+	</delete>
+</mapper>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

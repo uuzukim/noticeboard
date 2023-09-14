@@ -1,0 +1,145 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="kr.or.ddit.prod.dao.ProdDAO">
+	<select id="selectProdList" resultType="ProdVO">
+		SELECT 
+		    PROD_ID
+		    , PROD_NAME, PROD_LGU, PROD_BUYER
+		    , PROD_COST, PROD_PRICE, PROD_INSDATE
+		    , LPROD_NM "lprod.lprodNm"
+		    , BUYER_NAME "buyer.buyerName"
+		    , BUYER_ADD1 "buyer.buyerAdd1", 
+		    BUYER_CHARGER "buyer.buyerCharger"
+		FROM PROD INNER JOIN LPROD ON(PROD_LGU = LPROD_GU)
+		         INNER JOIN BUYER ON(PROD_BUYER=BUYER_ID)
+	</select>
+	
+	<resultMap type="ProdVO" id="prodMap" autoMapping="true">
+		<id property="prodId" column="PROD_ID"/>
+		<association property="buyer" javaType="BuyerVO" autoMapping="true">
+			<association property="lprod" javaType="LprodVO">
+				<result property="lprodNm" column="LPROD_NM"/>
+			</association>
+		</association>
+		<collection property="memList" ofType="MemberVO" autoMapping="true" />
+	</resultMap>
+	
+	<select id="selectProd" parameterType="string" resultMap="prodMap">
+		WITH PRODVIEW AS (
+		    SELECT
+		        PROD_ID, PROD_NAME, PROD_LGU
+		        , PROD_BUYER, PROD_COST, PROD_PRICE
+		        , PROD_SALE, PROD_OUTLINE, PROD_DETAIL
+		        , PROD_IMG, PROD_TOTALSTOCK, PROD_INSDATE
+		        , PROD_PROPERSTOCK, PROD_SIZE, PROD_COLOR
+		        , PROD_DELIVERY, PROD_UNIT, PROD_QTYIN
+		        , PROD_QTYSALE, PROD_MILEAGE
+		        , LPROD_NM "lprod.lprodNm"
+		    FROM PROD INNER JOIN LPROD ON (PROD_LGU = LPROD_GU)
+		), BUYERVIEW AS (
+		    SELECT 
+		    	BUYER_ID
+		        , BUYER_NAME, BUYER_LGU
+		        , BUYER_BANK, BUYER_BANKNO, BUYER_BANKNAME
+		        , BUYER_ADD1
+		        , BUYER_CHARGER
+		        , LPROD_NM
+		    FROM BUYER INNER JOIN LPROD ON (BUYER_LGU = LPROD_GU)
+		), CARTVIEW AS(
+			SELECT CART_PROD, CART_MEMBER, MEM_NAME, MEM_ID
+				, MEM_MAIL, MEM_ADD1
+			FROM CART INNER JOIN MEMBER ON (CART_MEMBER = MEM_ID)
+		)
+		SELECT    PRODVIEW.*, BUYERVIEW.*
+					
+		FROM PRODVIEW INNER JOIN BUYERVIEW ON (PROD_BUYER = BUYER_ID)
+				LEFT OUTER JOIN CARTVIEW ON (PROD_ID = CART_PROD)
+		WHERE PROD_ID = #{prodId}
+	</select>
+	
+	<insert id="insertProd" parameterType="ProdVO">
+		<selectKey order="BEFORE" resultType="string" keyProperty="prodId">
+			SELECT #{prodLgu} || LPAD(NVL(TO_NUMBER(SUBSTR(MAX(PROD_ID), 5)), 0) + 1, 6, '0')
+			FROM PROD
+			WHERE PROD_LGU  = #{prodLgu}
+		</selectKey>
+		INSERT INTO PROD(
+			PROD_ID
+			, PROD_NAME
+			, PROD_LGU
+			, PROD_BUYER
+			, PROD_COST
+			, PROD_PRICE
+			, PROD_SALE
+			, PROD_OUTLINE
+			, PROD_DETAIL
+			, PROD_IMG
+			, PROD_TOTALSTOCK
+			, PROD_INSDATE
+			, PROD_PROPERSTOCK
+			, PROD_SIZE
+			, PROD_COLOR
+			, PROD_DELIVERY
+			, PROD_UNIT
+			, PROD_QTYIN
+			, PROD_QTYSALE
+			, PROD_MILEAGE
+		)VALUES(
+			#{prodId,jdbcType=VARCHAR}
+			, #{prodName,jdbcType=VARCHAR}
+			, #{prodLgu,jdbcType=CHAR}
+			, #{prodBuyer,jdbcType=CHAR}
+			, #{prodCost,jdbcType=NUMERIC}
+			, #{prodPrice,jdbcType=NUMERIC}
+			, #{prodSale,jdbcType=NUMERIC}
+			, #{prodOutline,jdbcType=VARCHAR}
+			, #{prodDetail,jdbcType=CLOB}
+			, #{prodImg,jdbcType=VARCHAR}
+			, #{prodTotalstock,jdbcType=NUMERIC}
+			, #{prodInsdate,jdbcType=DATE}
+			, #{prodProperstock,jdbcType=NUMERIC}
+			, #{prodSize,jdbcType=VARCHAR}
+			, #{prodColor,jdbcType=VARCHAR}
+			, #{prodDelivery,jdbcType=VARCHAR}
+			, #{prodUnit,jdbcType=VARCHAR}
+			, #{prodQtyin,jdbcType=NUMERIC}
+			, #{prodQtysale,jdbcType=NUMERIC}
+			, #{prodMileage,jdbcType=NUMERIC}
+		)		
+	</insert>
+	<update id="updateProd" parameterType="ProdVO">
+		UPDATE PROD
+		SET
+			PROD_NAME = #{prodName,jdbcType=VARCHAR}
+			, PROD_COST = #{prodCost,jdbcType=NUMERIC}
+			, PROD_PRICE = #{prodPrice,jdbcType=NUMERIC}
+			, PROD_SALE = #{prodSale,jdbcType=NUMERIC}
+			, PROD_OUTLINE = #{prodOutline,jdbcType=VARCHAR}
+			, PROD_DETAIL = #{prodDetail,jdbcType=CLOB}
+			, PROD_TOTALSTOCK = #{prodTotalstock,jdbcType=NUMERIC}
+			, PROD_INSDATE = #{prodInsdate,jdbcType=DATE}
+			, PROD_PROPERSTOCK = #{prodProperstock,jdbcType=NUMERIC}
+			, PROD_SIZE = #{prodSize,jdbcType=VARCHAR}
+			, PROD_COLOR = #{prodColor,jdbcType=VARCHAR}
+			, PROD_DELIVERY = #{prodDelivery,jdbcType=VARCHAR}
+			, PROD_UNIT = #{prodUnit,jdbcType=VARCHAR}
+			, PROD_QTYIN = #{prodQtyin,jdbcType=NUMERIC}
+			, PROD_QTYSALE = #{prodQtysale,jdbcType=NUMERIC}
+			, PROD_MILEAGE = #{prodMileage,jdbcType=NUMERIC}
+			<if test="prodImg neq null and not prodImg.isEmpty()">
+				, PROD_IMG = #{prodImg,jdbcType=VARCHAR}
+			</if>
+			
+		WHERE PROD_ID = #{prodId,jdbcType=VARCHAR}
+	</update>
+</mapper>
+
+
+
+
+
+
+
+
+
+

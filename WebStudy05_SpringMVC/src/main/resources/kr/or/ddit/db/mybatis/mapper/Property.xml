@@ -1,0 +1,50 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="kr.or.ddit.props.dao.PropertyDAO">
+
+	<select id="selectProperties" resultType="PropertyVO">
+		SELECT PROPERTY_NAME, PROPERTY_VALUE, DESCRIPTION
+		FROM CUSTOM_PROPS
+	</select>
+	
+	<select id="selectProperty" parameterType="string" resultType="PropertyVO">
+		SELECT PROPERTY_NAME, PROPERTY_VALUE, DESCRIPTION
+		FROM CUSTOM_PROPS
+		WHERE PROPERTY_NAME = #{propertyName}
+	</select>
+<!-- 	#{} : inline parameter, ${} : replace text -->
+	<insert id="insertProperty" parameterType="PropertyVO">
+		INSERT INTO CUSTOM_PROPS
+		(
+			PROPERTY_NAME
+			, PROPERTY_VALUE
+			, DESCRIPTION
+		)VALUES(
+			#{propertyName,jdbcType=VARCHAR}
+			, #{propertyValue,jdbcType=VARCHAR}
+			, #{description,jdbcType=VARCHAR}
+		)
+	</insert>
+	<update id="deleteProperty" parameterType="string">
+		DELETE FROM CUSTOM_PROPS
+		WHERE PROPERTY_NAME = #{pn}
+	</update>
+</mapper>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
